@@ -54,7 +54,7 @@ compare4() {
 check_vulnerabilities() {
         	if compare4 "$1" "<=" "$LAST_VULNERABLE_RHEL_DOCKER"; then
                 	echo -e "${RED}This package is vulnerable, because it is older or the same as the last built vulnerable version $LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
-                	echo -e "${YELLOW}Update 'docker' using: curl -sSL https://get.docker.com/ | sudo sh .${RESET}"
+                	echo -e "${YELLOW}Update $2 to version older than ${RESET}$UPSTREAM_FIX ${YELLOW}version.${RESET}"
                 	return_value+=(3)
         	else
             		echo -e "${GREEN}This package is safe, because it is newer than last built vulnerable version ${YELLOW}$LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
@@ -86,7 +86,7 @@ for package in $( dpkg -l | grep docker | awk '{ print $2}' ); do
         docker_version=$( dpkg -l | grep docker | grep "$package" | awk '{ print $3}' | sed 's/^\(.*\)~.*$/\1/' )
 	echo -e "Detected package '$BOLD$docker_package_name$RESET'."
         echo
-	check_vulnerabilities "$docker_version"
+	check_vulnerabilities "$docker_version" "$docker_package_name"
 	echo
 done
 
