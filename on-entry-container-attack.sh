@@ -50,6 +50,22 @@ compare4() {
     return 1
 }
 
+# Parse docker version
+check_vulnerabilities() {
+        	if compare4 "$1" "<=" "$LAST_VULNERABLE_RHEL_DOCKER"; then
+                	echo -e "${RED}This package is vulnerable, because it is older or the same as the last built vulnerable version $LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
+                	echo -e "${RED}SELinux would mitigate the issue, but it is disabled.${RESET}"
+                	echo -e "${YELLOW}Update 'docker' to version older than ${RESET}$UPSTREAM_FIX ${YELLOW}version.${RESET}"
+                	return_value+=(3)
+        	else
+            		echo -e "${GREEN}This package is safe, because it is newer than last built vulnerable version ${YELLOW}$LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
+            		return_value+=(0)
+        	fi
+}
+
+
+
+
 # Help and parameters
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
   echo "Usage: $( basename "$0" ) [--no-colors]"
@@ -63,19 +79,19 @@ if [[ "$1" == "--no-colors"  ]]; then
     RESET=""
 fi
 
-# Desclimer
+# main
 echo
 echo -e "${BOLD}This script is primarily designed to detect On-entry Container Attack"
 echo
 
-# Parse docker version
-for package in $( dpkg -l | grep docker ); then
-	version=$( echo "$package" | awk '{ print $3}' )
-	if [[ "$version" =~ $DOCKER_PATTERN ]]; then
-        	docker_package_name=$( echo "$package" | awk '{ print $2}' )
-        	docker_version=$( echo "$package" | sed 's/^\(.*\)~.*$/\1/' )
-		check_vulnerability
-	fi
+# check vulnerabilities
+for package in $( dpkg -l | grep docker | awk '{ print $2}' ); do
+        docker_package_name=$( dpkg -l | grep docker | grep "$package" | awk '{ print $2}' )
+        docker_version=$( dpkg -l | grep docker | grep "$package" | awk '{ print $3}' | sed 's/^\(.*\)~.*$/\1/' )
+	echo -e "Detected package '$BOLD$docker_package_name$RESET'."
+        echo
+	check_vulnerabilities "$docker_version"
+	echo
 done
 
 # Check docker even installed
@@ -84,26 +100,6 @@ if [[ ! "$docker_package_name" ]]; then
     exit 0
 fi
 
-# Print results
-return_value=()
-
-check_vulnerability(){
-	echo -e "Detected package '$BOLD$docker_package_name$RESET'."
-	echo
-        if compare4 "$docker_version" "<=" "$LAST_VULNERABLE_RHEL_DOCKER"; then
-                echo -e "${RED}This package is vulnerable, because it is older or the same as the last built vulnerable version $LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
-                echo -e "${RED}SELinux would mitigate the issue, but it is disabled.${RESET}"
-                echo -e "${YELLOW}Update 'docker' to version older than ${RESET}$UPSTREAM_FIX ${YELLOW}version.${RESET}"
-                return_value+=(3)
-        else
-            echo -e "${GREEN}This package is safe, because it is newer than last built vulnerable version ${YELLOW}$LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
-            return_value+=(0)
-        fi
-	echo 
-fi
-}
-
-# Return value
 max=0
 for v in "${return_value[@]}"; do
     if (( v > max )); then 
