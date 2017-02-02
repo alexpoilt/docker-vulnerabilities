@@ -54,17 +54,13 @@ compare4() {
 check_vulnerabilities() {
         	if compare4 "$1" "<=" "$LAST_VULNERABLE_RHEL_DOCKER"; then
                 	echo -e "${RED}This package is vulnerable, because it is older or the same as the last built vulnerable version $LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
-                	echo -e "${RED}SELinux would mitigate the issue, but it is disabled.${RESET}"
-                	echo -e "${YELLOW}Update 'docker' to version older than ${RESET}$UPSTREAM_FIX ${YELLOW}version.${RESET}"
+                	echo -e "${YELLOW}Update 'docker' using: curl -sSL https://get.docker.com/ | sudo sh .${RESET}"
                 	return_value+=(3)
         	else
             		echo -e "${GREEN}This package is safe, because it is newer than last built vulnerable version ${YELLOW}$LAST_VULNERABLE_RHEL_DOCKER.${RESET}"
             		return_value+=(0)
         	fi
 }
-
-
-
 
 # Help and parameters
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
