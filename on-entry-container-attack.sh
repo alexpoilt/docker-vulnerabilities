@@ -69,11 +69,14 @@ echo -e "${BOLD}This script is primarily designed to detect On-entry Container A
 echo
 
 # Parse docker version
-package=$( dpkg -l | grep docker| awk '{ print $3}' )
-if [[ "$package" =~ $DOCKER_PATTERN ]]; then
-        docker_package_name=$( dpkg -l | grep docker| awk '{ print $2}' )
-        docker_version=$( echo "$package" | sed 's/^\(.*\)~.*$/\1/' )
-fi
+for package in $( dpkg -l | grep docker ); then
+	version=$( echo "$package" | awk '{ print $3}' )
+	if [[ "$version" =~ $DOCKER_PATTERN ]]; then
+        	docker_package_name=$( echo "$package" | awk '{ print $2}' )
+        	docker_version=$( echo "$package" | sed 's/^\(.*\)~.*$/\1/' )
+		check_vulnerability
+	fi
+done
 
 # Check docker even installed
 if [[ ! "$docker_package_name" ]]; then
@@ -84,7 +87,7 @@ fi
 # Print results
 return_value=()
 
-if [[ "$docker_package_name" ]]; then
+check_vulnerability(){
 	echo -e "Detected package '$BOLD$docker_package_name$RESET'."
 	echo
         if compare4 "$docker_version" "<=" "$LAST_VULNERABLE_RHEL_DOCKER"; then
@@ -98,7 +101,7 @@ if [[ "$docker_package_name" ]]; then
         fi
 	echo 
 fi
-
+}
 
 # Return value
 max=0
